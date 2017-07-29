@@ -1,7 +1,6 @@
 # Equal3d6
 A fair random-roller for D&amp;D-type games
 
-#Licence
 Copyright 2017 Rob Alexander
 
 Licenced under 3-clause BSD (https://opensource.org/licenses/BSD-3-Clause):
