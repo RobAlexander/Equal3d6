@@ -27,10 +27,7 @@ for prob in Flat3d6Probabilities:
 def randomStatFromDistribution(distro):
     #assumption - distro gives non-cum probabilities for values 0 and upwards in order
     #print(len(distro), len(distro))
-    return random.choices(range(len(distro)), distro)[0] #error saying that choices does not exist means you're running Python pre-3.6
-
-#print("A stat value", randomStatFromDistribution(Roll3d6Probabilities))
-                                 
+    return random.choices(range(len(distro)), distro)[0] #error saying that "choices" does not exist means you're running Python pre-3.6
 
 def roll3d6InOrderDieByDie():
     character = []
@@ -64,7 +61,6 @@ def sumModifiersBECMI(character):
     modTotal = 0
     for attrib in character:   #TODO: use a list comprehension to do this
         modTotal += BECMIModifiers[attrib]
-    #print (modTotal)
     return modTotal
 
 def anythingGoes(character):
@@ -100,39 +96,43 @@ def rollCharacterUntilCondition(characterRollFunction, characterValidityRule):
 
     return character
 
-def makeCharacters(number, characterValidityRule):
+def makeCharacters(number, characterRollRule, characterValidityRule):
     print("Making", number, "characters using", characterValidityRule.__name__)
     characters = []
     for c in range(number):
-        characters += [rollCharacterUntilCondition(roll3d6InOrderDieByDie, characterValidityRule)]
-        #characters += [rollCharacterUntilCondition(roll3d6InOrderUsingDistro, characterValidityRule)]
-        #characters += [rollCharacterUntilCondition(roll3d6InOrderUsingFlatDistro, characterValidityRule)]
+        characters += [rollCharacterUntilCondition(characterRollRule, characterValidityRule)]
     return characters
 
-charsToMake = 10
-#characters = makeCharacters(charsToMake, anythingGoes)
-#characters = makeCharacters(charsToMake, averageAttribTotal)
-#characters = makeCharacters(charsToMake, averageSumOfModifiersRaw)
-#characters = makeCharacters(charsToMake, averageSumOfModifiersLotFP)
-characters = makeCharacters(charsToMake, averageSumOfModifiersIs2)
-#characters = makeCharacters(charsToMake, LotFPCompliantSumOfModifiers)
 
-allAttributes = []
-#count through characters with index so we can number them in the printout
-for i in range(0, len(characters)):
-   c=characters[i]
-   allAttributes += c
-   charMods = [BECMIModifiers[a] for a in c]
-   #print (i, "---", c, "\t\t", sumModifiersBECMI(c), "{0:.1f}".format(meanAttribute(c)))
-   print (i, "---", charMods, "\t\t", sumModifiersBECMI(c), "{0:.1f}".format(meanAttribute(c)))
+def charAsRawValueString(c):
+    return f"{c} \t\t {sumModifiersBECMI(c)}, {meanAttribute(c):10.4}"
 
-charmods = list(map(sumModifiersBECMI, characters))
-print("Mean character mod: ", "{0:.2f}".format(sum(charmods)/len(charmods)))
+def charAsModifierOnlyString(c):
+    charMods = [BECMIModifiers[a] for a in c]
+    return f"{charMods} \t\t {sumModifiersBECMI(c)}, {meanAttribute(c):10.4}"
 
-print("Mean attribute value: ", "{0:.1f}".format(sum(allAttributes)/len(allAttributes)))
+def printCharacters(characters, characterPrinter):
+    allAttributes = []
+    #count through characters with index so we can number them in the printout
+    for i in range(0, len(characters)):
+       c=characters[i]
+       allAttributes += c       
+       print(i, "---", characterPrinter(c))
 
-print("Std dev attribute value: ", "{0:.2f}".format(statistics.stdev(allAttributes)))
+    charmods = list(map(sumModifiersBECMI, characters))
+    print("Mean character mod: ", "{0:.2f}".format(sum(charmods)/len(charmods)))
 
-print("Prop of 3", "{0:.5f}".format(allAttributes.count(3)/len(allAttributes)))
-print("Prop of 18", "{0:.5f}".format(allAttributes.count(18)/len(allAttributes)))
+    print("Mean attribute value: ", "{0:.1f}".format(sum(allAttributes)/len(allAttributes)))
+
+    print("Std dev attribute value: ", "{0:.2f}".format(statistics.stdev(allAttributes)))
+
+    print("Prop of 3", "{0:.5f}".format(allAttributes.count(3)/len(allAttributes)))
+    print("Prop of 18", "{0:.5f}".format(allAttributes.count(18)/len(allAttributes)))
+
+
+
+if __name__ == '__main__':
+    characters = makeCharacters(10, roll3d6InOrderDieByDie, averageSumOfModifiersIs2)
+
+    printCharacters(characters, charAsRawValueString)
 
