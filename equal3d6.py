@@ -14,7 +14,6 @@
 
 import random, statistics
 
-BECMIModifiers = [-99,-99,-99,-3,-2,-2,-1,-1,-1,0,0,0,0,1,1,1,2,2,3]
 Roll3d6Probabilities = [0,0,0,0.5,1.38,2.77,4.62,6.94,9.72,11.57,12.50,12.50,11.57,9.72,6.94,4.62,2.77,1.38,0.5]
 Flat3d6Probabilities = [0,0,0] + [(100/16)] * 16
 
@@ -24,6 +23,8 @@ for prob in Flat3d6Probabilities:
     cumulative += prob
 #print(cumulative)
 
+
+## Functions for rolling dice
 def randomStatFromDistribution(distro):
     #assumption - distro gives non-cum probabilities for values 0 and upwards in order
     #print(len(distro), len(distro))
@@ -53,62 +54,77 @@ def roll3d6InOrderUsingFlatDistro():
         character = character + [randomStatFromDistribution(Flat3d6Probabilities)]
     return character
 
-
 def meanAttribute(character):
     return sum(character)/len(character)
 
-def sumModifiersBECMI(character):
+def getBECMIModifier(attribValue):
+    BECMIModifiers = [-99,-99,-99,-3,-2,-2,-1,-1,-1,0,0,0,0,1,1,1,2,2,3]
+    return BECMIModifiers[attribValue]
+
+def getSWNModifier(attribValue):
+    SWNModifiers = [-99,-99,-99,-2,-1,-1,-1,-1,0,0,0,0,0,0,1,1,1,1,2]
+    return SWNModifiers[attribValue]
+    
+
+def sumModifiers(character, modifierLookupFunction):
     modTotal = 0
     for attrib in character:   #TODO: use a list comprehension to do this
-        modTotal += BECMIModifiers[attrib]
+        modTotal += modifierLookupFunction(attrib)
     return modTotal
 
-def anythingGoes(character):
+def sumModifiersBECMI(character):
+    return sumModifiers(character, getBECMIModifier)    
+
+
+### Validity rules
+def anythingGoes(character, attributeModifierRule):
     return True
 
-def averageAttribTotal(character):
+def averageAttribTotal(character, attributeModifierRule):
     return sum(character) == 63 #total is mean for 18d6
 
-def averageSumOfModifiersRaw(character):
-    return sumModifiersBECMI(character) == 0
+def averageSumOfModifiersRaw(character, attributeModifierRule):
+    return sumModifiers(character, attributeModifierRule) == 0
 
-def averageSumOfModifiersLotFP(character):
+def averageSumOfModifiersLotFP(character, attributeModifierRule):
     #Average LotFP-valid character has +1.5 sum-of-mod, so approximate that
     #Alternative (less variation in accepted characters) would be just
     #to accept either 1 or 2, not both
     #If set to 1, this slightly worse than LotFP, so could offer players gamble of this or actually rolling for themselves
-    sm = sumModifiersBECMI(character) 
+    sm = sumModifiers(character, attributeModifierRule) 
     return (sm==1 or sm==2)
 
 #impose the current Immergleich rule
-def averageSumOfModifiersIs2(character):
-    sm = sumModifiersBECMI(character) 
+def averageSumOfModifiersIs2(character, attributeModifierRule):
+    sm = sumModifiers(character, attributeModifierRule) 
     return (sm==2)
 
-def LotFPCompliantSumOfModifiers(character):
-    return sumModifiersBECMI(character) >= 0 
+def LotFPCompliantSumOfModifiers(character, attributeModifierRule):
+    return sumModifiers(character, attributeModifierRule) >= 0 
 
-def rollCharacterUntilCondition(characterRollFunction, characterValidityRule):
+
+### Functions that do the rolling process itself
+def rollCharacterUntilCondition(characterRollFunction, attributeModifierRule, characterValidityRule):
     character = characterRollFunction()
 
-    while (not characterValidityRule(character)):
+    while (not characterValidityRule(character, attributeModifierRule)):
         character = characterRollFunction()
 
     return character
 
-def makeCharacters(number, characterRollRule, characterValidityRule):
+def makeCharacters(number, characterRollRule, attributeModifierRule, characterValidityRule):
     print("Making", number, "characters using", characterValidityRule.__name__)
     characters = []
     for c in range(number):
-        characters += [rollCharacterUntilCondition(characterRollRule, characterValidityRule)]
+        characters += [rollCharacterUntilCondition(characterRollRule, attributeModifierRule, characterValidityRule)]
     return characters
 
 
 def charAsRawValueString(c):
     return f"{c} \t\t {sumModifiersBECMI(c)}, {meanAttribute(c):10.4}"
 
-def charAsModifierOnlyString(c):
-    charMods = [BECMIModifiers[a] for a in c]
+def charAsModifierOnlyString(c, attributeModifierRule):
+    charMods = [attributeModifierRule(a) for a in c]
     return f"{charMods} \t\t {sumModifiersBECMI(c)}, {meanAttribute(c):10.4}"
 
 def printCharacters(characters, characterPrinter):
@@ -119,7 +135,7 @@ def printCharacters(characters, characterPrinter):
        allAttributes += c       
        print(i, "---", characterPrinter(c))
 
-    charmods = list(map(sumModifiersBECMI, characters))
+    charmods = list(map(sumModifiersBECMI, characters)) #TODO: make parameterised on modifier tupe
     print("Mean character mod: ", "{0:.2f}".format(sum(charmods)/len(charmods)))
 
     print("Mean attribute value: ", "{0:.1f}".format(sum(allAttributes)/len(allAttributes)))
@@ -132,7 +148,7 @@ def printCharacters(characters, characterPrinter):
 
 
 if __name__ == '__main__':
-    characters = makeCharacters(10, roll3d6InOrderDieByDie, averageSumOfModifiersIs2)
+    characters = makeCharacters(10, roll3d6InOrderDieByDie, getBECMIModifier, averageSumOfModifiersIs2)
 
     printCharacters(characters, charAsRawValueString)
 
