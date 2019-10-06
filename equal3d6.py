@@ -95,12 +95,19 @@ def averageSumOfModifiersLotFP(character, attributeModifierRule):
     return (sm==1 or sm==2)
 
 #impose the current Immergleich rule
-def averageSumOfModifiersIs2(character, attributeModifierRule):
+def sumOfModifiersIs2(character, attributeModifierRule):
     sm = sumModifiers(character, attributeModifierRule) 
     return (sm==2)
 
 def LotFPCompliantSumOfModifiers(character, attributeModifierRule):
     return sumModifiers(character, attributeModifierRule) >= 0 
+
+def noSingleAttributeOutside2(character, attributeModifierRule):
+    for a in character:
+        mod = attributeModifierRule(a)
+        if (mod > 2 or mod < -2):
+            return False
+    return True
 
 
 ### Functions that do the rolling process itself
@@ -113,7 +120,7 @@ def rollCharacterUntilCondition(characterRollFunction, attributeModifierRule, ch
     return character
 
 def makeCharacters(number, characterRollRule, attributeModifierRule, characterValidityRule):
-    print("Making", number, "characters using", characterValidityRule.__name__)
+    print("Making", number, "characters using", characterRollRule.__name__, " and ", characterValidityRule.__name__)
     characters = []
     for c in range(number):
         characters += [rollCharacterUntilCondition(characterRollRule, attributeModifierRule, characterValidityRule)]
@@ -148,7 +155,7 @@ def printCharacters(characters, characterPrinter):
 
 
 if __name__ == '__main__':
-    characters = makeCharacters(10, roll3d6InOrderDieByDie, getBECMIModifier, averageSumOfModifiersIs2)
+    characters = makeCharacters(10, roll3d6InOrderDieByDie, getBECMIModifier, sumOfModifiersIs2)
 
     printCharacters(characters, charAsRawValueString)
 
